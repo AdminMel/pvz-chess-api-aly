@@ -63,4 +63,12 @@ public class MatchController {
             return ResponseEntity.internalServerError().body("Error al enviar notificación: " + e.getMessage());
         }
     }
+    @PostMapping("/{id}/accept")
+    public ResponseEntity<MatchResponse> accept(
+            @PathVariable Long id,
+            @RequestBody AcceptMatchRequest body
+    ) {
+        MatchResponse resp = matchService.acceptMatch(id, body.accepterId());
+        return ResponseEntity.ok(resp);
+    }
 }
