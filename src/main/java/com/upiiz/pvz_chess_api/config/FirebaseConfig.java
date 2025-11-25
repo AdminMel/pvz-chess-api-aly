@@ -3,7 +3,9 @@ package com.upiiz.pvz_chess_api.config;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
+import com.google.firebase.messaging.FirebaseMessaging;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import jakarta.annotation.PostConstruct;
@@ -31,5 +33,10 @@ public class FirebaseConfig {
 
         FirebaseApp.initializeApp(options);
         System.out.println("Firebase inicializado correctamente (Render)");
+    }
+    @Bean
+    public FirebaseMessaging firebaseMessaging() {
+        // Usa la app por defecto inicializada en init()
+        return FirebaseMessaging.getInstance();
     }
 }
