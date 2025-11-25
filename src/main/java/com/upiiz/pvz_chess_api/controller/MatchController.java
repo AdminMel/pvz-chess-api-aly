@@ -1,74 +1,305 @@
 package com.upiiz.pvz_chess_api.controller;
 
-import com.upiiz.pvz_chess_api.dto.MatchChallengeRequest;
-import com.upiiz.pvz_chess_api.service.NotificationService;
+import com.upiiz.pvz_chess_api.dto.AcceptMatchRequest;
+import com.upiiz.pvz_chess_api.dto.ChallengeRequest;
+import com.upiiz.pvz_chess_api.dto.MatchResponse;
+import com.upiiz.pvz_chess_api.service.MatchService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
-@RequestMapping("/public/v1/multiplayer/matches")
+@RequestMapping("/api/matches")
 @CrossOrigin(origins = "*")
-@Tag(name = "Matches", description = "Gestión de retos de partida y notificaciones")
 public class MatchController {
 
-    private final NotificationService notificationService;
+    private final MatchService matchService;
 
-    public MatchController(NotificationService notificationService) {
-        this.notificationService = notificationService;
+    public MatchController(MatchService matchService) {
+        this.matchService = matchService;
     }
 
+    // =========================================================
+    // POST /api/matches/challenge
+    // Crea un reto entre dos jugadores y envía notificación FCM
+    // =========================================================
     @Operation(
-            summary = "Enviar reto de partida",
+            summary = "Crear un reto entre dos jugadores",
             description = """
-                    Envía una notificación push (FCM) a un jugador retado.
-                    
-                    - **challengerId**: jugador que inicia el reto (será ZOMBIE en la partida).
-                    - **challengedId**: jugador retado (será PLANT en la partida).
-                    - **matchId**: identificador de la partida (definido por la app/juego).
-                    
-                    La notificación incluye datos en `data`: `type=CHALLENGE`, `matchId`, `fromId`, `fromName`.
+                    Crea una nueva partida en estado <b>PENDING</b> entre el jugador que lanza el reto
+                    (<code>challengerId</code>) y el jugador retado (<code>rivalId</code>).<br><br>
+                    Además de registrar el match en la base de datos, el servidor intenta enviar una
+                    notificación <b>Firebase Cloud Messaging</b> al jugador retado, utilizando su token FCM
+                    registrado previamente.<br><br>
+                    Por ahora, el flujo es:<br>
+                    1. La app cliente obtiene la lista de jugadores remotos.<br>
+                    2. El jugador A selecciona a un rival B y llama a este endpoint.<br>
+                    3. El API crea el match y manda la notificación al jugador B.<br>
+                    4. La app del jugador B muestra una pantalla de reto recibido.<br>
                     """
     )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Notificación de reto enviada correctamente"
-    )
-    @ApiResponse(
-            responseCode = "400",
-            description = "IDs inválidos o jugador sin token FCM registrado"
-    )
-    @ApiResponse(
-            responseCode = "500",
-            description = "Error interno al enviar la notificación"
-    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Reto creado correctamente",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = MatchResponse.class),
+                            examples = @ExampleObject(
+                                    name = "Match pendiente",
+                                    summary = "Ejemplo de respuesta exitosa",
+                                    value = """
+                                            {
+                                              "id": 10,
+                                              "challengerId": 1,
+                                              "rivalId": 2,
+                                              "status": "PENDING",
+                                              "createdAt": "2025-11-23T05:32:10.123Z"
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Datos inválidos (por ejemplo, IDs nulos o challengerId = rivalId)",
+                    content = @Content(
+                            mediaType = "text/plain",
+                            examples = @ExampleObject(
+                                    name = "Error de validación",
+                                    value = "challengerId y rivalId son obligatorios y deben ser distintos"
+                            )
+                    )
+            )
+    })
     @PostMapping("/challenge")
-    public ResponseEntity<?> challenge(@Valid @RequestBody MatchChallengeRequest req) {
-        try {
-            notificationService.sendChallengeNotification(
-                    req.getChallengerId(),
-                    req.getChallengedId(),
-                    req.getMatchId()
-            );
-            return ResponseEntity.ok().body("Notificación de reto enviada correctamente");
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (IllegalStateException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().body("Error al enviar notificación: " + e.getMessage());
-        }
+    public ResponseEntity<MatchResponse> challenge(
+            @RequestBody(
+                    required = true,
+                    description = "Información del reto: quién reta y a quién",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ChallengeRequest.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Reto básico",
+                                            summary = "Jugador 1 reta al jugador 2",
+                                            value = """
+                                                    {
+                                                      "challengerId": 1,
+                                                      "rivalId": 2
+                                                    }
+                                                    """
+                                    )
+                            }
+                    )
+            )
+            @org.springframework.web.bind.annotation.RequestBody ChallengeRequest request
+    ) {
+        MatchResponse response = matchService.createChallenge(request);
+        return ResponseEntity.ok(response);
     }
+
+    // =========================================================
+    // POST /api/matches/{id}/accept
+    // El jugador retado acepta la partida
+    // =========================================================
+    @Operation(
+            summary = "Aceptar un reto existente",
+            description = """
+                    Marca un match en estado <b>PENDING</b> como <b>ACCEPTED</b>.<br><br>
+                    Este endpoint debe ser llamado por la app del jugador que fue retado
+                    (es decir, el que aparece como <code>rivalId</code> en el match).<br><br>
+                    Además de actualizar el estado del match, el servidor intentará enviar
+                    una notificación FCM al jugador que lanzó el reto para avisar que el
+                    reto fue aceptado.
+                    """
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Match aceptado correctamente",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = MatchResponse.class),
+                            examples = @ExampleObject(
+                                    name = "Match aceptado",
+                                    summary = "Respuesta con estado ACCEPTED",
+                                    value = """
+                                            {
+                                              "id": 10,
+                                              "challengerId": 1,
+                                              "rivalId": 2,
+                                              "status": "ACCEPTED",
+                                              "createdAt": "2025-11-23T05:32:10.123Z"
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "El jugador que intenta aceptar no coincide con el rival del match o el match no está en estado PENDING",
+                    content = @Content(
+                            mediaType = "text/plain",
+                            examples = @ExampleObject(
+                                    name = "Match no pendiente o jugador incorrecto",
+                                    value = "Solo el jugador retado puede aceptar partidas en estado PENDING"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Match no encontrado",
+                    content = @Content(
+                            mediaType = "text/plain",
+                            examples = @ExampleObject(
+                                    name = "Match inexistente",
+                                    value = "Match no encontrado: 999"
+                            )
+                    )
+            )
+    })
     @PostMapping("/{id}/accept")
     public ResponseEntity<MatchResponse> accept(
-            @PathVariable Long id,
-            @RequestBody AcceptMatchRequest body
+            @PathVariable("id") Long matchId,
+            @RequestBody(
+                    required = true,
+                    description = "Datos del jugador que acepta el reto",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = AcceptMatchRequest.class),
+                            examples = @ExampleObject(
+                                    name = "Aceptar match",
+                                    summary = "El jugador 2 acepta el match 10",
+                                    value = """
+                                            {
+                                              "accepterId": 2
+                                            }
+                                            """
+                            )
+                    )
+            )
+            @org.springframework.web.bind.annotation.RequestBody AcceptMatchRequest request
     ) {
-        MatchResponse resp = matchService.acceptMatch(id, body.accepterId());
-        return ResponseEntity.ok(resp);
+        MatchResponse response = matchService.acceptMatch(matchId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    // =========================================================
+    // GET /api/matches/{id}
+    // Obtener detalle de un match
+    // =========================================================
+    @Operation(
+            summary = "Obtener detalle de un match",
+            description = """
+                    Devuelve la información básica de un match: ids de jugadores, estado actual
+                    y fecha de creación.<br><br>
+                    Útil para que el cliente móvil recupere el estado de una partida después
+                    de recibir una notificación o al reabrir la app.
+                    """
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Match encontrado",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = MatchResponse.class),
+                            examples = @ExampleObject(
+                                    name = "Match existente",
+                                    summary = "Ejemplo de match en estado PENDING",
+                                    value = """
+                                            {
+                                              "id": 10,
+                                              "challengerId": 1,
+                                              "rivalId": 2,
+                                              "status": "PENDING",
+                                              "createdAt": "2025-11-23T05:32:10.123Z"
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Match no encontrado",
+                    content = @Content(
+                            mediaType = "text/plain",
+                            examples = @ExampleObject(
+                                    name = "Match inexistente",
+                                    value = "Match no encontrado: 10"
+                            )
+                    )
+            )
+    })
+    @GetMapping("/{id}")
+    public ResponseEntity<MatchResponse> getMatch(
+            @PathVariable("id") Long matchId
+    ) {
+        MatchResponse response = matchService.getMatch(matchId);
+        return ResponseEntity.ok(response);
+    }
+
+    // =========================================================
+    // GET /api/matches/player/{playerId}
+    // Listar matches relacionados con un jugador
+    // =========================================================
+    @Operation(
+            summary = "Listar matches de un jugador",
+            description = """
+                    Devuelve todas las partidas en las que participa el jugador indicado por
+                    <code>playerId</code>, ya sea como retador (<code>challengerId</code>)
+                    o como retado (<code>rivalId</code>).<br><br>
+                    Puedes usar este endpoint para mostrar el historial de partidas en la app
+                    o para depurar el flujo de retos.
+                    """
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Lista de matches (puede estar vacía)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = MatchResponse.class),
+                            examples = @ExampleObject(
+                                    name = "Lista de partidas",
+                                    summary = "Ejemplo de historial de un jugador",
+                                    value = """
+                                            [
+                                              {
+                                                "id": 10,
+                                                "challengerId": 1,
+                                                "rivalId": 2,
+                                                "status": "PENDING",
+                                                "createdAt": "2025-11-23T05:32:10.123Z"
+                                              },
+                                              {
+                                                "id": 11,
+                                                "challengerId": 3,
+                                                "rivalId": 1,
+                                                "status": "ACCEPTED",
+                                                "createdAt": "2025-11-23T05:40:01.987Z"
+                                              }
+                                            ]
+                                            """
+                            )
+                    )
+            )
+    })
+    @GetMapping("/player/{playerId}")
+    public ResponseEntity<List<MatchResponse>> listMatchesForPlayer(
+            @PathVariable("playerId") Long playerId
+    ) {
+        List<MatchResponse> matches = matchService.listMatchesForPlayer(playerId);
+        return ResponseEntity.ok(matches);
     }
 }
