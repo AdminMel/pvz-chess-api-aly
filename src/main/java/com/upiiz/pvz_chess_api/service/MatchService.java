@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class MatchService {
@@ -62,10 +61,11 @@ public class MatchService {
                 rival.getFcmToken(),
                 "Nuevo reto en PvZ Chess",
                 challenger.getUsername() + " quiere jugar una partida contigo",
-                "challenge",
+                "CHALLENGE",                         // 🔥 IMPORTANTE: coincide con Android
                 match.getId(),
                 challengerId,
-                rivalId
+                rivalId,
+                challenger.getUsername()             // para challengerName en el cliente
         );
 
         return toResponse(match);
@@ -85,26 +85,25 @@ public class MatchService {
             throw new IllegalArgumentException("Solo el jugador retado puede aceptar este match");
         }
 
-        Match finalMatch1 = match;
         Player challenger = playerRepository.findById(match.getChallengerId())
-                .orElseThrow(() -> new IllegalArgumentException("Challenger not found: " + finalMatch1.getChallengerId()));
+                .orElseThrow(() -> new IllegalArgumentException("Challenger not found: " + match.getChallengerId()));
 
-        Match finalMatch = match;
         Player rival = playerRepository.findById(match.getRivalId())
-                .orElseThrow(() -> new IllegalArgumentException("Rival not found: " + finalMatch.getRivalId()));
+                .orElseThrow(() -> new IllegalArgumentException("Rival not found: " + match.getRivalId()));
 
         match.setStatus(MatchStatus.ACCEPTED);
         match = matchRepository.save(match);
 
-        // Notificación FCM al challenger
+        // Notificación FCM al challenger (si luego quieres manejar CHALLENGE_ACCEPTED en Android)
         sendNotificationSafe(
                 challenger.getFcmToken(),
                 "Reto aceptado",
                 rival.getUsername() + " aceptó tu reto, ¡prepárate para jugar!",
-                "challenge_accepted",
+                "CHALLENGE_ACCEPTED",
                 match.getId(),
                 match.getChallengerId(),
-                match.getRivalId()
+                match.getRivalId(),
+                rival.getUsername()
         );
 
         return toResponse(match);
@@ -127,7 +126,6 @@ public class MatchService {
         return result;
     }
 
-
     // ================== Helpers privados ==================
 
     private MatchResponse toResponse(Match m) {
@@ -147,11 +145,16 @@ public class MatchService {
             String type,
             Long matchId,
             Long challengerId,
-            Long rivalId
+            Long rivalId,
+            String challengerName
     ) {
         if (fcmToken == null || fcmToken.isEmpty()) {
+            System.out.println("⚠ No se envía FCM: token vacío o nulo");
             return;
         }
+
+        System.out.println("📨 Enviando FCM a token: " + fcmToken
+                + " type=" + type + " matchId=" + matchId);
 
         Notification notif = Notification.builder()
                 .setTitle(title)
@@ -172,11 +175,15 @@ public class MatchService {
         if (rivalId != null) {
             builder.putData("rivalId", String.valueOf(rivalId));
         }
+        if (challengerName != null) {
+            builder.putData("challengerName", challengerName);
+        }
 
         try {
-            firebaseMessaging.send(builder.build());
+            String resp = firebaseMessaging.send(builder.build());
+            System.out.println("✅ FCM enviada ok: " + resp);
         } catch (Exception e) {
-            // No tumbar la app por un fallo enviando notificación
+            System.out.println("❌ Error enviando FCM: " + e.getMessage());
             e.printStackTrace();
         }
     }
