@@ -85,11 +85,13 @@ public class MatchService {
             throw new IllegalArgumentException("Solo el jugador retado puede aceptar este match");
         }
 
+        Match finalMatch1 = match;
         Player challenger = playerRepository.findById(match.getChallengerId())
-                .orElseThrow(() -> new IllegalArgumentException("Challenger not found: " + match.getChallengerId()));
+                .orElseThrow(() -> new IllegalArgumentException("Challenger not found: " + finalMatch1.getChallengerId()));
 
+        Match finalMatch = match;
         Player rival = playerRepository.findById(match.getRivalId())
-                .orElseThrow(() -> new IllegalArgumentException("Rival not found: " + match.getRivalId()));
+                .orElseThrow(() -> new IllegalArgumentException("Rival not found: " + finalMatch.getRivalId()));
 
         match.setStatus(MatchStatus.ACCEPTED);
         match = matchRepository.save(match);
@@ -181,9 +183,9 @@ public class MatchService {
 
         try {
             String resp = firebaseMessaging.send(builder.build());
-            System.out.println("✅ FCM enviada ok: " + resp);
+            System.out.println("FCM enviada ok: " + resp);
         } catch (Exception e) {
-            System.out.println("❌ Error enviando FCM: " + e.getMessage());
+            System.out.println("Error enviando FCM: " + e.getMessage());
             e.printStackTrace();
         }
     }
