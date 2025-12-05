@@ -21,6 +21,9 @@ public class PlayerResponse {
         this.losses = losses;
     }
 
+    public PlayerResponse(Long id, String username, String email, String fcmToken, int gamesPlayed, int wins, int losses) {
+    }
+
     public Long getId() { return id; }
 
     public void setId(Long id) { this.id = id; }
