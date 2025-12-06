@@ -18,39 +18,16 @@ public class Match {
     private Long rivalId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "status", nullable = false, length = 20)
     private MatchStatus status;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @Lob
-    @Column(name = "board_state")
-    private String boardState;
-
-    @Column(name = "current_turn_player_id")
-    private Long currentTurnPlayerId;
-
-    @Column(name = "last_turn_start_time")
-    private Long lastTurnStartTime;
-
-    public Match() {
-    }
-
-    public Match(Long challengerId,
-                 Long rivalId,
-                 MatchStatus status,
-                 Instant createdAt) {
-        this.challengerId = challengerId;
-        this.rivalId = rivalId;
-        this.status = status;
-        this.createdAt = createdAt;
-
-        // si quieres: inicializas campos nuevos aquí
-        this.boardState = null;
-        this.currentTurnPlayerId = challengerId; // por ejemplo empieza el retador
-        this.lastTurnStartTime = Instant.now().toEpochMilli();
-    }
+    // Match.java
+    private String boardState;           // TEXT
+    private Long currentTurnPlayerId;    // BIGINT
+    private Instant lastTurnStartTime;
 
 
     public Match() {
