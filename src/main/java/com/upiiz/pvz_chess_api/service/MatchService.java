@@ -6,6 +6,7 @@ import com.google.firebase.messaging.Notification;
 import com.upiiz.pvz_chess_api.dto.AcceptMatchRequest;
 import com.upiiz.pvz_chess_api.dto.ChallengeRequest;
 import com.upiiz.pvz_chess_api.dto.MatchResponse;
+import com.upiiz.pvz_chess_api.dto.MatchStateRequest;
 import com.upiiz.pvz_chess_api.model.Match;
 import com.upiiz.pvz_chess_api.model.MatchStatus;
 import com.upiiz.pvz_chess_api.model.Player;
@@ -136,7 +137,10 @@ public class MatchService {
                 m.getChallengerId(),
                 m.getRivalId(),
                 m.getStatus().name(),
-                m.getCreatedAt()
+                m.getCreatedAt(),
+                m.getBoardState(),
+                m.getBoardState(),
+                m.getChallengerId()
         );
     }
 
@@ -189,4 +193,18 @@ public class MatchService {
             e.printStackTrace();
         }
     }
+    // MatchService.java
+    public MatchResponse updateState(Long matchId, MatchStateRequest body) {
+        Match m = matchRepository.findById(matchId)
+                .orElseThrow(() -> new IllegalArgumentException("Match not found " + matchId));
+
+        m.setBoardState(body.boardState());
+        m.setCurrentTurnPlayerId(body.currentTurnPlayerId());
+        m.setLastTurnStartTime(body.lastTurnStartTime());
+
+        m = matchRepository.save(m);
+
+        return toResponse(m);
+    }
+
 }
