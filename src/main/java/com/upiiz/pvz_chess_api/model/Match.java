@@ -24,16 +24,28 @@ public class Match {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    // Match.java
+    @Lob
+    @Column(name = "board_state")
     private String boardState;           // TEXT
-    private Long currentTurnPlayerId;    // BIGINT
-    private Instant lastTurnStartTime;
 
+    @Column(name = "current_turn_player_id")
+    private Long currentTurnPlayerId;    // BIGINT
+
+    @Column(name = "last_turn_start_time")
+    private Instant lastTurnStartTime;
 
     public Match() {
     }
 
-    public Match(Long id, Long challengerId, Long rivalId, MatchStatus status, Instant createdAt, String boardState, Long currentTurnPlayerId, Instant lastTurnStartTime) {
+    // ctor completo (si lo quieres conservar)
+    public Match(Long id,
+                 Long challengerId,
+                 Long rivalId,
+                 MatchStatus status,
+                 Instant createdAt,
+                 String boardState,
+                 Long currentTurnPlayerId,
+                 Instant lastTurnStartTime) {
         this.id = id;
         this.challengerId = challengerId;
         this.rivalId = rivalId;
@@ -44,71 +56,45 @@ public class Match {
         this.lastTurnStartTime = lastTurnStartTime;
     }
 
-    public Match(Long challengerId, Long rivalId, MatchStatus matchStatus, Instant now) {
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public Long getChallengerId() {
-        return challengerId;
-    }
-
-    public Long getRivalId() {
-        return rivalId;
-    }
-
-    public MatchStatus getStatus() {
-        return status;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public void setChallengerId(Long challengerId) {
+    // 🔥 ESTE es el que usa tu servicio createChallenge
+    public Match(Long challengerId,
+                 Long rivalId,
+                 MatchStatus status,
+                 Instant createdAt) {
         this.challengerId = challengerId;
-    }
-
-    public void setRivalId(Long rivalId) {
         this.rivalId = rivalId;
-    }
-
-    public void setStatus(MatchStatus status) {
         this.status = status;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+
+        // inicializamos estado online
+        this.boardState = null;                    // ya luego se llenará
+        this.currentTurnPlayerId = challengerId;   // empieza el retador
+        this.lastTurnStartTime = createdAt;
     }
 
-    public String getBoardState() {
-        return boardState;
-    }
+    // getters y setters
 
-    public void setBoardState(String boardState) {
-        this.boardState = boardState;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public Long getCurrentTurnPlayerId() {
-        return currentTurnPlayerId;
-    }
+    public Long getChallengerId() { return challengerId; }
+    public void setChallengerId(Long challengerId) { this.challengerId = challengerId; }
 
-    public void setCurrentTurnPlayerId(Long currentTurnPlayerId) {
-        this.currentTurnPlayerId = currentTurnPlayerId;
-    }
+    public Long getRivalId() { return rivalId; }
+    public void setRivalId(Long rivalId) { this.rivalId = rivalId; }
 
-    public Instant getLastTurnStartTime() {
-        return lastTurnStartTime;
-    }
+    public MatchStatus getStatus() { return status; }
+    public void setStatus(MatchStatus status) { this.status = status; }
 
-    public void setLastTurnStartTime(Instant lastTurnStartTime) {
-        this.lastTurnStartTime = lastTurnStartTime;
-    }
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+
+    public String getBoardState() { return boardState; }
+    public void setBoardState(String boardState) { this.boardState = boardState; }
+
+    public Long getCurrentTurnPlayerId() { return currentTurnPlayerId; }
+    public void setCurrentTurnPlayerId(Long currentTurnPlayerId) { this.currentTurnPlayerId = currentTurnPlayerId; }
+
+    public Instant getLastTurnStartTime() { return lastTurnStartTime; }
+    public void setLastTurnStartTime(Instant lastTurnStartTime) { this.lastTurnStartTime = lastTurnStartTime; }
 }
-
