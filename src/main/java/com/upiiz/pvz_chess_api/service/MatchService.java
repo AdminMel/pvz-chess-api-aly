@@ -132,17 +132,18 @@ public class MatchService {
     // ================== Helpers privados ==================
 
     private MatchResponse toResponse(Match m) {
-        return new MatchResponse(
-                m.getId(),
-                m.getChallengerId(),
-                m.getRivalId(),
-                m.getStatus().name(),
-                m.getCreatedAt(),
-                m.getBoardState(),
-                m.getBoardState(),
-                m.getChallengerId()
-        );
-    }
+    return new MatchResponse(
+            m.getId(),
+            m.getChallengerId(),
+            m.getRivalId(),
+            m.getStatus().name(),
+            m.getCreatedAt(),
+            m.getBoardState(),
+            m.getCurrentTurnPlayerId(),
+            m.getLastTurnStartTime()
+    );
+}
+
 
     private void sendNotificationSafe(
             String fcmToken,
