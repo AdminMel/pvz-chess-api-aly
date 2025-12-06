@@ -3,6 +3,7 @@ package com.upiiz.pvz_chess_api.controller;
 import com.upiiz.pvz_chess_api.dto.AcceptMatchRequest;
 import com.upiiz.pvz_chess_api.dto.ChallengeRequest;
 import com.upiiz.pvz_chess_api.dto.MatchResponse;
+import com.upiiz.pvz_chess_api.dto.MatchStateRequest;
 import com.upiiz.pvz_chess_api.service.MatchService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -302,4 +303,14 @@ public class MatchController {
         List<MatchResponse> matches = matchService.listMatchesForPlayer(playerId);
         return ResponseEntity.ok(matches);
     }
+
+    // MatchController.java
+    @PutMapping("/{id}/state")
+    public MatchResponse updateState(
+            @PathVariable Long id,
+            @RequestBody MatchStateRequest body
+    ) {
+        return matchService.updateState(id, body);
+    }
+
 }
