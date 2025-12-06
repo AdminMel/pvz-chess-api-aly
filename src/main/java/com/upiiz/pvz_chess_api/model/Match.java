@@ -24,14 +24,27 @@ public class Match {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    // Match.java
+    private String boardState;           // TEXT
+    private Long currentTurnPlayerId;    // BIGINT
+    private Instant lastTurnStartTime;
+
+
     public Match() {
     }
 
-    public Match(Long challengerId, Long rivalId, MatchStatus status, Instant createdAt) {
+    public Match(Long id, Long challengerId, Long rivalId, MatchStatus status, Instant createdAt, String boardState, Long currentTurnPlayerId, Instant lastTurnStartTime) {
+        this.id = id;
         this.challengerId = challengerId;
         this.rivalId = rivalId;
         this.status = status;
         this.createdAt = createdAt;
+        this.boardState = boardState;
+        this.currentTurnPlayerId = currentTurnPlayerId;
+        this.lastTurnStartTime = lastTurnStartTime;
+    }
+
+    public Match(Long challengerId, Long rivalId, MatchStatus matchStatus, Instant now) {
     }
 
     public Long getId() {
@@ -72,6 +85,30 @@ public class Match {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getBoardState() {
+        return boardState;
+    }
+
+    public void setBoardState(String boardState) {
+        this.boardState = boardState;
+    }
+
+    public Long getCurrentTurnPlayerId() {
+        return currentTurnPlayerId;
+    }
+
+    public void setCurrentTurnPlayerId(Long currentTurnPlayerId) {
+        this.currentTurnPlayerId = currentTurnPlayerId;
+    }
+
+    public Instant getLastTurnStartTime() {
+        return lastTurnStartTime;
+    }
+
+    public void setLastTurnStartTime(Instant lastTurnStartTime) {
+        this.lastTurnStartTime = lastTurnStartTime;
     }
 }
 
