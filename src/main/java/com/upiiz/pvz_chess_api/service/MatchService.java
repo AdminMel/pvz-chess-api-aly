@@ -50,11 +50,19 @@ public class MatchService {
                 .orElseThrow(() -> new IllegalArgumentException("Rival not found: " + rivalId));
 
         Match match = new Match(
-                challengerId,
-                rivalId,
-                MatchStatus.PENDING,
-                Instant.now()
+            challengerId,
+            rivalId,
+            MatchStatus.PENDING,
+            Instant.now()
         );
+        
+        // ✅ Inicialización base del juego (para que Android no invente)
+        match.setBoardState(""); // o el estado inicial serializado si lo quieres ya listo
+        match.setCurrentTurnPlayerId(challengerId);
+        match.setLastTurnStartTime(Instant.now());
+        
+        match = matchRepository.save(match);
+
         match = matchRepository.save(match);
 
         // Notificación FCM al rival
