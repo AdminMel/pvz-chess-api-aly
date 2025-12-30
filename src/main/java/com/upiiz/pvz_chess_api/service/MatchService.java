@@ -103,6 +103,17 @@ public class MatchService {
                 .orElseThrow(() -> new IllegalArgumentException("Rival not found: " + finalMatch.getRivalId()));
 
         match.setStatus(MatchStatus.ACCEPTED);
+
+        if (match.getBoardState() == null || match.getBoardState().isEmpty()) {
+            match.setBoardState(""); // o tu Board.initial serializado
+        }
+        if (match.getCurrentTurnPlayerId() == null) {
+            match.setCurrentTurnPlayerId(match.getChallengerId());
+        }
+        if (match.getLastTurnStartTime() == null) {
+            match.setLastTurnStartTime(Instant.now());
+        }
+        
         match = matchRepository.save(match);
 
         // Notificación FCM al challenger (si luego quieres manejar CHALLENGE_ACCEPTED en Android)
