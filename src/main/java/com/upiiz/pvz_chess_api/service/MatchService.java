@@ -61,7 +61,10 @@ public class MatchService {
         match.setCurrentTurnPlayerId(challengerId);
         match.setLastTurnStartTime(Instant.now());
         
-        match = matchRepository.save(match);
+        // ✅ Estado inicial del juego (debe vivir en servidor)
+        String initialBoard = com.upiiz.examen_mare_02.data.game.BoardSerializer
+                .serialize(com.upiiz.examen_mare_02.data.game.Board.initial());
+        
 
         match = matchRepository.save(match);
 
