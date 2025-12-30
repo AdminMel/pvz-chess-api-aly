@@ -132,6 +132,10 @@ public class MatchService {
     // ================== Helpers privados ==================
 
     private MatchResponse toResponse(Match m) {
+    Long lastMillis = (m.getLastTurnStartTime() != null)
+            ? m.getLastTurnStartTime().toEpochMilli()
+            : null;
+
     return new MatchResponse(
             m.getId(),
             m.getChallengerId(),
@@ -140,9 +144,10 @@ public class MatchService {
             m.getCreatedAt(),
             m.getBoardState(),
             m.getCurrentTurnPlayerId(),
-            m.getLastTurnStartTime()
+            lastMillis
     );
 }
+
 
 
     private void sendNotificationSafe(
