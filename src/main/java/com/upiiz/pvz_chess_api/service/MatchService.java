@@ -203,14 +203,15 @@ public class MatchService {
     public MatchResponse updateState(Long matchId, MatchStateRequest body) {
         Match m = matchRepository.findById(matchId)
                 .orElseThrow(() -> new IllegalArgumentException("Match not found " + matchId));
-
-        m.setBoardState(body.boardState());
-        m.setCurrentTurnPlayerId(body.currentTurnPlayerId());
-        m.setLastTurnStartTime(body.lastTurnStartTime());
-
+    
+        m.setBoardState(body.getBoardState());
+        m.setCurrentTurnPlayerId(body.getCurrentTurnPlayerId());
+    
+        if (body.getLastTurnStartTime() != null) {
+            m.setLastTurnStartTime(Instant.ofEpochMilli(body.getLastTurnStartTime()));
+        }
+    
         m = matchRepository.save(m);
-
         return toResponse(m);
     }
-
 }
