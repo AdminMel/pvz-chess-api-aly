@@ -112,7 +112,7 @@ public class MatchService {
         match.setStatus(MatchStatus.ACCEPTED);
 
         if (match.getBoardState() == null || match.getBoardState().isEmpty()) {
-            match.setBoardState(INITIAL_BOARD_STATE_STRING);
+            match.setBoardState("");
         }
         if (match.getCurrentTurnPlayerId() == null) {
             match.setCurrentTurnPlayerId(match.getChallengerId());
