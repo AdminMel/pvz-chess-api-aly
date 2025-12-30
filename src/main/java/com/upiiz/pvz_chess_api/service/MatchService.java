@@ -56,16 +56,20 @@ public class MatchService {
             Instant.now()
         );
         
-        // ✅ Inicialización base del juego (para que Android no invente)
-        match.setBoardState(""); // o el estado inicial serializado si lo quieres ya listo
-        match.setCurrentTurnPlayerId(challengerId);
-        match.setLastTurnStartTime(Instant.now());
+        // ✅ Guardar estado inicial que viene desde Android
+        match.setBoardState(request.getBoardState());
         
-        // ✅ Estado inicial del juego (debe vivir en servidor)
-        String initialBoard = com.upiiz.examen_mare_02.data.game.BoardSerializer
-                .serialize(com.upiiz.examen_mare_02.data.game.Board.initial());
+        // ✅ turno inicial (por default: challenger)
+        match.setCurrentTurnPlayerId(
+                request.getCurrentTurnPlayerId() != null ? request.getCurrentTurnPlayerId() : challengerId
+        );
         
-
+        // ✅ tiempo inicial
+        if (request.getLastTurnStartTime() != null) {
+            match.setLastTurnStartTime(Instant.ofEpochMilli(request.getLastTurnStartTime()));
+        } else {
+            match.setLastTurnStartTime(Instant.now());
+        }
         match = matchRepository.save(match);
 
         // Notificación FCM al rival
