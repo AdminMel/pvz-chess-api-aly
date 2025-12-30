@@ -109,7 +109,7 @@ public class MatchService {
         Player rival = playerRepository.findById(match.getRivalId())
                 .orElseThrow(() -> new IllegalArgumentException("Rival not found: " + finalMatch.getRivalId()));
 
-        match.setStatus(MatchStatus.EN_CURSO);
+        match.setStatus(MatchStatus.ACCEPTED);
 
         if (match.getBoardState() == null || match.getBoardState().isEmpty()) {
             match.setBoardState(""); // o tu Board.initial serializado
