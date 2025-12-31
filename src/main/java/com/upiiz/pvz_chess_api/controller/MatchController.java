@@ -308,13 +308,9 @@ public class MatchController {
     @PutMapping("/{id}/state")
     public MatchResponse updateState(
             @PathVariable Long id,
-            @RequestBody MatchStateRequest body,
-            @RequestHeader(value = "X-Player-Id", required = false) Long actorId
+            @org.springframework.web.bind.annotation.RequestBody MatchStateRequest body
     ) {
-        // Si viene en header, lo usamos (tu Android YA lo manda)
-        if (actorId != null) {
-            body.setActorId(actorId);
-        }
         return matchService.updateState(id, body);
     }
+
 }
