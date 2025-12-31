@@ -7,7 +7,13 @@ public class MatchStateRequest {
     private Long currentTurnPlayerId;
     private Long lastTurnStartTime; // epoch millis
 
+    private Long actorId;
+
+    
     public MatchStateRequest() {}
+
+    public Long getActorId() { return actorId; }
+    public void setActorId(Long actorId) { this.actorId = actorId; }
 
     public String getBoardState() {
         return boardState;
@@ -33,3 +39,4 @@ public class MatchStateRequest {
         this.lastTurnStartTime = lastTurnStartTime;
     }
 }
+
