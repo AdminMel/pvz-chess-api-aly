@@ -227,64 +227,52 @@ public class MatchService {
     }
     // MatchService.java
     public MatchResponse updateState(Long matchId, MatchStateRequest body) {
-        Match m = matchRepository.findById(matchId)
-                .orElseThrow(() -> new IllegalArgumentException("Match not found " + matchId));
-    
-        // Solo partidas activas
-        if (m.getStatus() != MatchStatus.ACCEPTED) {
-            return toResponse(m);
-        }
-    
-        Long actorId = body.getActorId();
-        if (actorId == null) {
-            throw new IllegalArgumentException("actorId es obligatorio (manda header X-Player-Id)");
-        }
-    
-        // actor debe pertenecer al match
-        boolean isPlayer = actorId.equals(m.getChallengerId()) || actorId.equals(m.getRivalId());
-        if (!isPlayer) {
-            throw new IllegalArgumentException("actorId no pertenece a este match");
-        }
-    
-        // Si no hay turno en server, default challenger
-        if (m.getCurrentTurnPlayerId() == null) {
-            m.setCurrentTurnPlayerId(m.getChallengerId());
-        }
-        if (m.getLastTurnStartTime() == null) {
-            m.setLastTurnStartTime(Instant.now());
-        }
-    
-        Long serverTurn = m.getCurrentTurnPlayerId();
-    
-        // ✅ REGLA #1: SOLO puede escribir el que tiene el turno
-        if (!actorId.equals(serverTurn)) {
-            // No rompemos: simplemente devolvemos estado actual del server
-            return toResponse(m);
-        }
-    
-        // ✅ REGLA #2: No aceptar updates viejos (anti “pisadas”)
-        // Si el cliente manda un lastTurnStartTime más viejo que el del server, lo ignoramos.
-        if (body.getLastTurnStartTime() != null && m.getLastTurnStartTime() != null) {
-            long incoming = body.getLastTurnStartTime();
-            long server = m.getLastTurnStartTime().toEpochMilli();
-            if (incoming < server) {
-                return toResponse(m);
-            }
-        }
-    
-        // ✅ Aplicar boardState
-        if (body.getBoardState() != null) {
-            m.setBoardState(body.getBoardState());
-        }
-    
-        // ✅ El server calcula el siguiente turno (para que el cliente no lo “invente”)
-        Long nextTurn = actorId.equals(m.getChallengerId()) ? m.getRivalId() : m.getChallengerId();
-        m.setCurrentTurnPlayerId(nextTurn);
-    
-        // ✅ Reinicia tiempo del turno en server
-        m.setLastTurnStartTime(Instant.now());
-    
-        m = matchRepository.save(m);
-        return toResponse(m);
+    Match m = matchRepository.findById(matchId)
+            .orElseThrow(() -> new IllegalArgumentException("Match not found " + matchId));
+
+    if (body == null) throw new IllegalArgumentException("Body vacío");
+
+    // ✅ actor obligatorio
+    Long actorId = body.getActorId();
+    if (actorId == null) {
+        throw new IllegalArgumentException("actorId es obligatorio");
     }
+
+    // ✅ solo jugadores del match
+    if (!actorId.equals(m.getChallengerId()) && !actorId.equals(m.getRivalId())) {
+        throw new IllegalArgumentException("actorId no pertenece a este match");
+    }
+
+    // ✅ solo el que tiene el turno puede escribir estado
+    if (m.getCurrentTurnPlayerId() != null && !m.getCurrentTurnPlayerId().equals(actorId)) {
+        throw new IllegalArgumentException("No es tu turno");
+    }
+
+    // ✅ anti “pisadas”: si mandas lastTurnStartTime, debe ser >= al del server
+    // (si llega uno viejo, NO lo guardamos)
+    if (body.getLastTurnStartTime() != null && m.getLastTurnStartTime() != null) {
+        long incoming = body.getLastTurnStartTime();
+        long server = m.getLastTurnStartTime().toEpochMilli();
+        if (incoming < server) {
+            // Ignora update viejo
+            return toResponse(m);
+        }
+    }
+
+    // ✅ aplicar tablero (AQUÍ es donde se estaba “regresando” por pisadas)
+    if (body.getBoardState() != null) {
+        m.setBoardState(body.getBoardState());
+    }
+
+    if (body.getCurrentTurnPlayerId() != null) {
+        m.setCurrentTurnPlayerId(body.getCurrentTurnPlayerId());
+    }
+
+    if (body.getLastTurnStartTime() != null) {
+        m.setLastTurnStartTime(Instant.ofEpochMilli(body.getLastTurnStartTime()));
+    }
+
+    m = matchRepository.save(m);
+    return toResponse(m);
+}
 }
