@@ -244,6 +244,10 @@ public MatchResponse updateState(Long matchId, MatchStateRequest body) {
     if (body.getLastTurnStartTime() != null) {
         m.setLastTurnStartTime(Instant.ofEpochMilli(body.getLastTurnStartTime()));
     }
+    System.out.println("UPDATE match=" + matchId
+        + " boardState.len=" + (body.getBoardState() == null ? "null" : body.getBoardState().length())
+        + " turn=" + body.getCurrentTurnPlayerId()
+        + " last=" + body.getLastTurnStartTime());
 
     m = matchRepository.save(m);
     return toResponse(m);
