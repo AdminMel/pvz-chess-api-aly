@@ -308,9 +308,13 @@ public class MatchController {
     @PutMapping("/{id}/state")
     public MatchResponse updateState(
             @PathVariable Long id,
-            @RequestBody MatchStateRequest body
+            @RequestBody MatchStateRequest body,
+            @RequestHeader(value = "X-Player-Id", required = false) Long actorId
     ) {
+        // Si viene en header, lo usamos (tu Android YA lo manda)
+        if (actorId != null) {
+            body.setActorId(actorId);
+        }
         return matchService.updateState(id, body);
     }
-
 }
