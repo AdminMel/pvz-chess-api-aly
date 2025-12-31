@@ -226,18 +226,27 @@ public class MatchService {
         }
     }
     // MatchService.java
-    public MatchResponse updateState(Long matchId, MatchStateRequest body) {
-        Match m = matchRepository.findById(matchId)
-                .orElseThrow(() -> new IllegalArgumentException("Match not found " + matchId));
-    
+public MatchResponse updateState(Long matchId, MatchStateRequest body) {
+    Match m = matchRepository.findById(matchId)
+            .orElseThrow(() -> new IllegalArgumentException("Match not found " + matchId));
+
+    // ✅ Guardar boardState
+    if (body.getBoardState() != null) {
         m.setBoardState(body.getBoardState());
-        m.setCurrentTurnPlayerId(body.getCurrentTurnPlayerId());
-    
-        if (body.getLastTurnStartTime() != null) {
-            m.setLastTurnStartTime(Instant.ofEpochMilli(body.getLastTurnStartTime()));
-        }
-    
-        m = matchRepository.save(m);
-        return toResponse(m);
     }
+
+    // ✅ Guardar turno
+    if (body.getCurrentTurnPlayerId() != null) {
+        m.setCurrentTurnPlayerId(body.getCurrentTurnPlayerId());
+    }
+
+    // ✅ Guardar tiempo: Android manda Long, entidad normalmente usa Instant
+    if (body.getLastTurnStartTime() != null) {
+        m.setLastTurnStartTime(Instant.ofEpochMilli(body.getLastTurnStartTime()));
+    }
+
+    m = matchRepository.save(m);
+    return toResponse(m);
+}
+
 }
