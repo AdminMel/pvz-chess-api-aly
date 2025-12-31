@@ -230,15 +230,15 @@ public class MatchService {
         Match m = matchRepository.findById(matchId)
                 .orElseThrow(() -> new IllegalArgumentException("Match not found " + matchId));
     
-        // ✅ usa getters, NO body.boardState()
-        m.setBoardState(body.getBoardState());
-        m.setCurrentTurnPlayerId(body.getCurrentTurnPlayerId());
-    
-        // lastTurnStartTime viene en millis => convertir a Instant
+        // ✅ NO pisar con nulls
+        if (body.getBoardState() != null) {
+            m.setBoardState(body.getBoardState());
+        }
+        if (body.getCurrentTurnPlayerId() != null) {
+            m.setCurrentTurnPlayerId(body.getCurrentTurnPlayerId());
+        }
         if (body.getLastTurnStartTime() != null) {
             m.setLastTurnStartTime(Instant.ofEpochMilli(body.getLastTurnStartTime()));
-        } else {
-            m.setLastTurnStartTime(null);
         }
     
         m = matchRepository.save(m);
